@@ -15,25 +15,25 @@ const cors = require('cors')
 
 app.use(cors())
 
-const mongoose = require('mongoose');
+// const mongoose = require('mongoose');
 
 
-const password = process.argv[2];
+// const password = process.argv[2];
 
-const url = `mongodb+srv://subaina12345:${password}@subaina.dgtzy.mongodb.net/phonebook?retryWrites=true&w=majority&appName=subaina`;
+// const url = `mongodb+srv://subaina12345:${password}@subaina.dgtzy.mongodb.net/phonebook?retryWrites=true&w=majority&appName=subaina`;
 
-mongoose.set('strictQuery', false);
-mongoose.connect(url);
+// mongoose.set('strictQuery', false);
+// mongoose.connect(url);
 
-const peopleSchema = new mongoose.Schema({
-    name: String,
-    number: String,
-}, { collection: 'people' });
+// const peopleSchema = new mongoose.Schema({
+//     name: String,
+//     number: String,
+// }, { collection: 'people' });
 
-const People = mongoose.model('People', peopleSchema);
-morgan.token('body', (req, res) => {
-    return req.method === 'POST' ? JSON.stringify(req.body) : ' ';
-})
+// const People = mongoose.model('People', peopleSchema);
+// morgan.token('body', (req, res) => {
+//     return req.method === 'POST' ? JSON.stringify(req.body) : ' ';
+// })
 
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
 let persons = [
