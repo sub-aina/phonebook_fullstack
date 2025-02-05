@@ -1,0 +1,8 @@
+# Development Environment
+DEV_PORT=3000
+
+# Production Environment
+PROD_PORT=8000
+
+# Staging Environment (Optional)
+STAGING_PORT=4000

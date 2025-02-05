@@ -1,17 +1,36 @@
 const express = require('express')
 const morgan = require('morgan')
 const app = express();
+app.use(express.static('dist'))
 
+// app.get('/', (request, response) => {
+//     response.send('<h1>Hello World!</h1>')
+// })
+app.get('*', (req, res) => {
+    res.sendFile(__dirname + '/dist/index.html');
+});
 
-app.get('/', (request, response) => {
-    response.send('<h1>Hello World!</h1>')
-})
 app.use(express.json());
 const cors = require('cors')
 
 app.use(cors())
 
+const mongoose = require('mongoose');
 
+
+const password = process.argv[2];
+
+const url = `mongodb+srv://subaina12345:${password}@subaina.dgtzy.mongodb.net/phonebook?retryWrites=true&w=majority&appName=subaina`;
+
+mongoose.set('strictQuery', false);
+mongoose.connect(url);
+
+const peopleSchema = new mongoose.Schema({
+    name: String,
+    number: String,
+}, { collection: 'people' });
+
+const People = mongoose.model('People', peopleSchema);
 morgan.token('body', (req, res) => {
     return req.method === 'POST' ? JSON.stringify(req.body) : ' ';
 })
@@ -103,6 +122,7 @@ app.post('/api/persons', (req, res) => {
     res.status(201).json(newperson);
 })
 
+require('dotenv').config();
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => {
     console.log(`Server running on ${PORT}`)
