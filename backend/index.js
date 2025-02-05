@@ -6,9 +6,7 @@ app.use(express.static('dist'))
 // app.get('/', (request, response) => {
 //     response.send('<h1>Hello World!</h1>')
 // })
-app.get('*', (req, res) => {
-    res.sendFile(__dirname + '/dist/index.html');
-});
+
 
 app.use(express.json());
 const cors = require('cors')
@@ -121,6 +119,9 @@ app.post('/api/persons', (req, res) => {
     persons.push(newperson);
     res.status(201).json(newperson);
 })
+app.get('*', (req, res) => {
+    res.sendFile(__dirname + '/dist/index.html');
+});
 
 require('dotenv').config();
 const PORT = process.env.PORT || 3000
