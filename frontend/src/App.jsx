@@ -82,6 +82,7 @@ const App = () => {
 	);
 
 	const deleteperson = async (id) => {
+		console.log("hahaha", id);
 		try {
 			const person = persons.find((p) => p._id === id);
 			if (!person || !window.confirm(`Delete ${person.name}?`)) return;
