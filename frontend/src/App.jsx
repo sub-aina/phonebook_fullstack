@@ -81,22 +81,20 @@ const App = () => {
 			person.name && person.name.toLowerCase().includes(filter.toLowerCase())
 	);
 
-	const deleteperson = (id) => {
-		const person = persons.find((person) => person.id === id);
-		if (person && window.confirm(`Delete ${person.name}?`)) {
-			noteService
-				.deletePerson(id)
-				.then(() => {
-					setPersons(persons.filter((person) => person.id !== id));
-				})
-				.catch((error) => {
-					alert(
-						`The person '${person.name}' was already deleted from the server.`
-					);
-				});
+	const deleteperson = async (id) => {
+		try {
+			const person = persons.find((p) => p._id === id);
+			if (!person || !window.confirm(`Delete ${person.name}?`)) return;
+
+			await noteService.deletePerson(id);
+
+			const updatedPersons = await noteService.getAll();
+			setPersons(updatedPersons);
+		} catch (error) {
+			console.error("Delete failed:", error);
+			alert("Failed to delete person");
 		}
 	};
-
 	useEffect(() => {
 		const shapes = [
 			"shape-15",

@@ -1,130 +1,124 @@
-const express = require('express')
-const morgan = require('morgan')
+require('dotenv').config();
+
+const express = require('express');
+const morgan = require('morgan');
+const cors = require('cors');
+const mongoose = require('mongoose');
+
 const app = express();
-app.use(express.static('dist'))
-
-// app.get('/', (request, response) => {
-//     response.send('<h1>Hello World!</h1>')
-// })
-
-
+app.use(express.static('dist'));
 app.use(express.json());
-const cors = require('cors')
+app.use(cors());
 
-app.use(cors())
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.url}`);
+    next();
+});
 
-// const mongoose = require('mongoose');
+//  MongoDB Connection
+const url = process.env.mongodb_Url;
 
+mongoose.connect(url)
+    .then(() => console.log('Connected to MongoDB'))
+    .catch(error => console.error('Error connecting to MongoDB:', error.message));
 
-// const password = process.argv[2];
+mongoose.set('strictQuery', false);
 
-// const url = `mongodb+srv://subaina12345:${password}@subaina.dgtzy.mongodb.net/phonebook?retryWrites=true&w=majority&appName=subaina`;
+//  Define Schema & Model
+const peopleSchema = new mongoose.Schema({
 
-// mongoose.set('strictQuery', false);
-// mongoose.connect(url);
+    name: String,
+    number: String,
+}, { collection: 'people' });
 
-// const peopleSchema = new mongoose.Schema({
-//     name: String,
-//     number: String,
-// }, { collection: 'people' });
+const People = mongoose.model('People', peopleSchema);
 
-// const People = mongoose.model('People', peopleSchema);
-// morgan.token('body', (req, res) => {
-//     return req.method === 'POST' ? JSON.stringify(req.body) : ' ';
-// })
+//  Logger Middleware
+morgan.token('body', (req, res) => (req.method === 'POST' ? JSON.stringify(req.body) : ' '));
+app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'));
 
-app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
-let persons = [
-    {
-        "id": "1",
-        "name": "Subaina Munib",
-        "number": "040-123456"
-    },
-    {
-        "id": "2",
-        "name": "Abdul Wahab",
-        "number": "39-44-5323523"
-    },
-    {
-        "id": "3",
-        "name": "Zainab Khalil",
-        "number": "12-43-234345"
-    },
-    {
-        "id": "4",
-        "name": "Shareen",
-        "number": "39-23-6423122"
-    }
-]
-
+//  Get All Persons (From MongoDB)
 app.get('/api/persons', (req, res) => {
-    res.json(persons)
-})
+    People.find({}).then(people => {
+        res.json(people);
+    }).catch(error => {
+        console.error('Error fetching persons:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    });
+});
 
+//  Get a Single Person by ID (From MongoDB)
 app.get('/api/persons/:id', (req, res) => {
-    const id = req.params.id;
-    const person = persons.find(person => person.id === id)
+    People.findById(req.params.id)
+        .then(person => {
+            if (person) res.json(person);
+            else res.status(404).json({ error: "Person not found" });
+        })
+        .catch(error => {
+            console.error('Error fetching person:', error);
+            res.status(400).json({ error: "Invalid ID" });
+        });
+});
 
-    if (person)
-        res.json(person)
-    else
-        res.status(404).json({ error: "not found" })
-})
-
+// Info Route
 app.get('/info', (req, res) => {
-    const currentdate = new Date();
-    const dateTime = currentdate.toString();
-    const num = persons.length;
+    People.countDocuments()
+        .then(count => {
+            const currentDate = new Date();
+            res.send(`<p>Phonebook has info for ${count} people</p><p>${currentDate}</p>`);
+        })
+        .catch(error => {
+            console.error('Error counting people:', error);
+            res.status(500).json({ error: 'Internal Server Error' });
+        });
+});
 
-    res.send(
-        `<p>Phonebook info for ${num} people</p>
-        <p>${dateTime}</p>`
-    )
-})
-
-app.delete('/api/persons/:id', (req, res) => {
-    const id = req.params.id;
-    const initiallen = persons.length;
-    persons = persons.filter(person => person.id !== id)
-
-    if (persons.length < initiallen)
-        res.status(204).end();
-    else
-        res.status(404).json({ error: "not found" });
-})
-
+// Delete a Person by ID
+app.delete('/api/persons/:id', async (req, res) => {
+    console.log("Deleting person with id:", req.params.id);
+    try {
+        const deletedPerson = await People.findByIdAndDelete(req.params.id);
+        if (!deletedPerson) {
+            return res.status(404).json({ error: "Person not found" });
+        }
+        res.status(204).end(); // No content to send back
+    } catch (error) {
+        console.error('Error deleting person:', error);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+//  Add a New Person (Saving to MongoDB)
 app.post('/api/persons', (req, res) => {
     const { name, number } = req.body;
 
-    const n = persons.find(person => person.name === name);
-    if (n) {
-        return res.status(400).json({ error: "name must be unique" });
-    }
-    if (!name) {
-        return res.status(400).json({ error: "name required" });
+    if (!name || !number) {
+        return res.status(400).json({ error: "Name and number are required" });
     }
 
-    if (!number) {
-        return res.status(400).json({ error: "number required" });
-    }
+    People.findOne({ name }).then(existingPerson => {
+        if (existingPerson) {
+            return res.status(400).json({ error: "Name must be unique" });
+        }
 
-    const newId = String(Math.max(...persons.map(p => parseInt(p.id))) + 1);
+        const newPerson = new People({ name, number });
 
-    const newperson = {
-        id: newId,
-        name,
-        number
-    };
+        newPerson.save()
+            .then(savedPerson => res.status(201).json(savedPerson))
+            .catch(error => {
+                console.error('Error saving person:', error);
+                res.status(500).json({ error: "Internal Server Error" });
+            });
+    });
+});
 
-    persons.push(newperson);
-    res.status(201).json(newperson);
-})
+// Serve Frontend for All Other Routes
 app.get('*', (req, res) => {
     res.sendFile(__dirname + '/dist/index.html');
 });
 
-require('dotenv').config();
-const PORT = process.env.PORT || 3000
+//  Start Server
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server running on ${PORT}`)
-})
+    console.log(`Server running on ${PORT}`);
+});
+

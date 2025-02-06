@@ -15,8 +15,16 @@ mongoose.connect(url);
 const peopleSchema = new mongoose.Schema({
     name: String,
     number: String,
-}, { collection: 'people' });
-
+}, {
+    collection: 'people',
+    toJSON: {
+        transform: (document, returnedObject) => {
+            returnedObject.id = returnedObject._id.toString()
+            delete returnedObject._id
+            delete returnedObject.__v
+        }
+    }
+});
 const People = mongoose.model('People', peopleSchema);
 
 People.find({}).then(result => {
@@ -24,9 +32,12 @@ People.find({}).then(result => {
     result.forEach(person => console.log(person));
 
     return People.insertMany([
-        { name: "Abdul Wahab", number: "39-44-5323523" },
-        { name: "Ayesha Khan", number: "92-55-8123456" },
-        { name: "Ali Raza", number: "21-99-3344556" }
+        // { name: "Abdul Wahab", number: "39-44-5323523" },
+        // { name: "Ayesha Khan", number: "92-55-8123456" },
+        // { name: "Ali Raza", number: "21-99-3344556" }
+        // { name: "Abdullah", number: "39-44-5323523" },
+        // { name: "Ayes", number: "92-55-8123456" },
+        // { name: "Ali", number: "21-99-3344556" }
     ]);
 }).then(() => {
     console.log('Person saved successfully!');
