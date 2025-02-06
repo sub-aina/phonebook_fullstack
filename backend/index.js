@@ -74,10 +74,31 @@ app.get('/info', (req, res) => {
 });
 
 // Delete a Person by ID
+// app.delete('/api/persons/:id', async (req, res) => {
+//     console.log("Deleting person with id:", req.params.id);
+//     try {
+//         const deletedPerson = await People.findByIdAndDelete(req.params.id);
+//         if (!deletedPerson) {
+//             return res.status(404).json({ error: "Person not found" });
+//         }
+//         res.status(204).end(); // No content to send back
+//     } catch (error) {
+//         console.error('Error deleting person:', error);
+//         res.status(500).json({ error: "Server error" });
+//     }
+// });
 app.delete('/api/persons/:id', async (req, res) => {
     console.log("Deleting person with id:", req.params.id);
+
+    const personId = req.params.id;
+
+    // Ensure the id is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(personId)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+    }
+
     try {
-        const deletedPerson = await People.findByIdAndDelete(req.params.id);
+        const deletedPerson = await People.findByIdAndDelete(personId);
         if (!deletedPerson) {
             return res.status(404).json({ error: "Person not found" });
         }
